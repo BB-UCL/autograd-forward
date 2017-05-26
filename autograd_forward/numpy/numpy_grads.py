@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-import autograd.numpy_grads as npg
+import autograd.numpy.numpy_grads as npg
 import autograd.numpy as anp
 from builtins import range
 

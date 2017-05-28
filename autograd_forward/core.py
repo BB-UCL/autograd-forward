@@ -37,8 +37,8 @@ active_forward_progenitors = OrderedDict()
 def jvp(self, argnum, ingrad, ans, gvs, vs, args, kwargs):
     try:
         return self.jvps[argnum](ingrad, ans, gvs, vs, *args, **kwargs)
-    except KeyError:
-        if self.jvps == {}:
+    except (KeyError, AttributeError):
+        if not hasattr(self, 'jvps') or self.jvps == {}:
             errstr = "Forward gradient of {0} not yet implemented."
         else:
             errstr = "Forward gradient of {0} w.r.t. arg number {1} not yet implemented."

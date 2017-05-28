@@ -3,6 +3,22 @@ import autograd.core as ac
 from collections import defaultdict, OrderedDict
 import warnings
 
+def split_progenitors(progenitors):
+    # Splits the forward from the reverse progenitors in a Node
+    fwd_progenitors = dict()
+    rev_progenitors = set()
+    for p, val in progenitors.items():
+        if val is None:
+            rev_progenitors.add(p)
+        else:
+            fwd_progenitors[p] = val
+    return rev_progenitors, fwd_progenitors
+
+def combine_progenitors(rev_progenitors, fwd_progenitors):
+    for p in rev_progenitors:
+        fwd_progenitors[p] = None
+    return fwd_progenitors
+
 def make_jvp(fun, argnum=0):
     def jvp(*args, **kwargs):
         args = list(args)
@@ -10,14 +26,14 @@ def make_jvp(fun, argnum=0):
         args[argnum] = start_node
         def forward_mode_pass(v):
             ac.assert_vspace_match(v, start_node.vspace, None)
-            start_node.progenitors[1][start_node] = v
+            start_node.progenitors[start_node] = v
             active_forward_progenitors[start_node] = True
             end_node = fun(*args, **kwargs)
             active_forward_progenitors.pop(start_node)
-            if not ac.isnode(end_node) or start_node not in end_node.progenitors[1]:
+            if not ac.isnode(end_node) or start_node not in end_node.progenitors:
                 warnings.warn("Output seems independent of input.")
                 return end_node, ac.vspace(ac.getval(end_node)).zeros()
-            return end_node, end_node.progenitors[1][start_node]
+            return end_node, end_node.progenitors[start_node]
         return forward_mode_pass, start_node
     return jvp
 
@@ -43,17 +59,17 @@ ac.primitive.jvp = jvp
 ac.primitive.defjvp = defjvp
 
 def primitive_call(self, *args, **kwargs):
-    argvals, parents, progenitors, forward_progenitors = self.find_progenitors(args)
+    argvals, parents, rev_progenitors, fwd_progenitors = self.find_progenitors(args)
     result_value = self.fun(*argvals, **kwargs)
-    if progenitors and not forward_progenitors:
-        return ac.new_node(result_value, (self, args, kwargs, parents), (progenitors, dict()))
-    elif progenitors and forward_progenitors:
-        result = ac.new_node(result_value, (self, args, kwargs, parents), (progenitors, dict()))
-        result = self.fwd_update(args, kwargs, result, forward_progenitors)
+    if rev_progenitors and not fwd_progenitors:
+        return ac.new_node(result_value, (self, args, kwargs, parents), dict.fromkeys(rev_progenitors, None))
+    elif rev_progenitors and fwd_progenitors:
+        result = ac.new_node(result_value, (self, args, kwargs, parents), dict.fromkeys(rev_progenitors, None))
+        result = self.fwd_update(args, kwargs, result, fwd_progenitors)
         return result
-    elif forward_progenitors and not progenitors:
-        result = ac.new_node(result_value, None,                          (progenitors, dict()))
-        result = self.fwd_update(args, kwargs, result, forward_progenitors)
+    elif fwd_progenitors and not rev_progenitors:
+        result = ac.new_node(result_value, None,                          dict())
+        result = self.fwd_update(args, kwargs, result, fwd_progenitors)
         return result
     else:
         return result_value
@@ -68,7 +84,7 @@ def find_progenitors(self, args):
             if argnum in self.zero_vjps: continue
             argvals[argnum] = arg.value
 
-            arg_rev_progenitors, arg_fwd_progenitors = arg.progenitors
+            arg_rev_progenitors, arg_fwd_progenitors = split_progenitors(arg.progenitors)
             for progenitor in arg_fwd_progenitors:
                 if active_forward_progenitors.get(progenitor, False):
                     fwd_progenitors[progenitor].append((argnum, arg))
@@ -88,12 +104,12 @@ def fwd_update(self, args, kwargs, result, forward_progenitors):
             continue
         total_ingrad = None
         for argnum, arg in forward_progenitors[progenitor]:
-            forward_grad = arg.progenitors[1][progenitor]
+            forward_grad = arg.progenitors[progenitor]
             ingrad = self.jvp(argnum, forward_grad, result, arg.vspace,
                               result.vspace, args, kwargs)
             assert_vspace_match(ingrad, result.vspace, self, fwd=True)
             total_ingrad = ac.add_outgrads(result.vspace, total_ingrad, ingrad)
-        result.progenitors[1][progenitor] = total_ingrad[0]
+        result.progenitors[progenitor] = total_ingrad[0]
         active_forward_progenitors[progenitor] = True
     return result
 
@@ -105,9 +121,9 @@ def new_progenitor(x, fwd=False):
     if ac.isnode(x):
         node = ac.new_node(x.value, (ac.identity, (x,), {}, [(0, x)]), x.progenitors)
     else:
-        node = ac.new_node(x,       (ac.identity, (x,), {}, []      ), (set(),         dict()               ))
+        node = ac.new_node(x,       (ac.identity, (x,), {}, []      ), dict()       )
     if not fwd:
-        node.progenitors[0].add(node)
+        node.progenitors[node] = None
     return node
 ac.new_progenitor = new_progenitor
 

@@ -14,11 +14,6 @@ def split_progenitors(progenitors):
             fwd_progenitors[p] = val
     return rev_progenitors, fwd_progenitors
 
-def combine_progenitors(rev_progenitors, fwd_progenitors):
-    for p in rev_progenitors:
-        fwd_progenitors[p] = None
-    return fwd_progenitors
-
 def make_jvp(fun, argnum=0):
     def jvp(*args, **kwargs):
         args = list(args)

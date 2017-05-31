@@ -27,7 +27,8 @@ def make_jvp(fun, argnum=0):
             active_forward_progenitors.pop(start_node)
             if not ac.isnode(end_node) or start_node not in end_node.progenitors:
                 warnings.warn("Output seems independent of input.")
-                return end_node, ac.vspace(ac.getval(end_node)).zeros()
+                return (end_node, end_node.vspace.zeros() if ac.isnode(end_node) else
+                        ac.vspace(end_node).zeros())
             return end_node, end_node.progenitors[start_node]
         return forward_mode_pass, start_node
     return jvp

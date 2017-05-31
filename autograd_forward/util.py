@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from builtins import range
 
+from autograd.core import vspace, getval
 import autograd.util as au
 from autograd_forward.convenience_wrappers import forward_derivative
 

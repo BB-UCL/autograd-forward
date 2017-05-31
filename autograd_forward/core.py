@@ -77,8 +77,8 @@ def find_progenitors(self, args):
     fwd_progenitors = defaultdict(list)
     for argnum, arg in enumerate(args):
         if ac.isnode(arg):
-            if argnum in self.zero_vjps: continue
             argvals[argnum] = arg.value
+            if argnum in self.zero_vjps: continue
 
             arg_rev_progenitors, arg_fwd_progenitors = split_progenitors(arg.progenitors)
             for progenitor in arg_fwd_progenitors:

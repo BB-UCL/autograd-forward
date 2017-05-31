@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import autograd.numpy.numpy_grads as npg
 import autograd.numpy as anp
+from autograd.core import getval
 from builtins import range
 
 

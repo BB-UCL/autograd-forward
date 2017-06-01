@@ -120,8 +120,6 @@ anp.mean.defjvp(lambda g, ans, gvs, vs, x, axis=None, keepdims=False: anp.mean(g
 anp.prod.defjvp(lambda g, ans, gvs, vs, x, axis=None, keepdims=False: ans * anp.sum(g / x, axis=axis, keepdims=keepdims))
 
 def forward_grad_np_var(g, ans, gvs, vs, x, axis=None, ddof=0, keepdims=False):
-    if vs.iscomplex:
-        g = g + 0j
     if axis is None:
         if gvs.iscomplex:
             num_reps = gvs.size / 2

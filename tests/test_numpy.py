@@ -1,870 +1,333 @@
 from __future__ import absolute_import
-import warnings
-
-import autograd.numpy as np
 import autograd.numpy.random as npr
-from autograd.util import *
-from autograd import grad
-from numpy_utils import combo_check
-npr.seed(1)
+import autograd.numpy as np
+import operator as op
+from numpy_utils import (combo_check, stat_check, unary_ufunc_check,
+                         binary_ufunc_check, binary_ufunc_check_no_same_args)
+npr.seed(0)
 
-# def test_dot():
-#     def fun( x, y): return to_scalar(np.dot(x, y))
-#     def dfun(x, y): return to_scalar(grad(fun)(x, y))
-#
-#     mat1 = npr.randn(10, 11)
-#     mat2 = npr.randn(10, 11)
-#     vect1 = npr.randn(10)
-#     vect2 = npr.randn(11)
-#     vect3 = npr.randn(11)
-#
-#     check_grads(fun, mat1, vect2)
-#     check_grads(fun, mat1, mat2.T)
-#     check_grads(fun, vect1, mat1)
-#     check_grads(fun, vect2, vect3)
-#     check_grads(dfun, mat1, vect2)
-#     check_grads(dfun, mat1, mat2.T)
-#     check_grads(dfun, vect1, mat1)
-#     check_grads(dfun, vect2, vect3)
-#
-# def test_dot_with_floats():
-#     def fun( x, y): return to_scalar(np.dot(x, y))
-#     def dfun(x, y): return to_scalar(grad(fun)(x, y))
-#
-#     mat1 = npr.randn(10, 11)
-#     vect1 = npr.randn(10)
-#     float1 = npr.randn()
-#
-#     check_grads(fun, mat1, float1)
-#     check_grads(fun, float1, mat1)
-#     check_grads(fun, vect1, float1)
-#     check_grads(fun, float1, vect1)
-#     check_grads(dfun, mat1, float1)
-#     check_grads(dfun, float1, mat1)
-#     check_grads(dfun, vect1, float1)
-#     check_grads(dfun, float1, vect1)
-#
-# # No longer supporting this
-# # def test_dot_method():
-# #     def fun(x, y): return to_scalar(x.dot(y))
-#
-# #     mat1 = npr.randn(10, 11)
-# #     mat2 = npr.randn(10, 11)
-# #     vect1 = npr.randn(10)
-# #     vect2 = npr.randn(11)
-# #     vect3 = npr.randn(11)
-#
-# #     check_grads(fun, mat1, vect2)
-# #     check_grads(fun, mat1, mat2.T)
-# #     check_grads(fun, vect1, mat1)
-# #     check_grads(fun, vect2, vect3)
-#
-# def test_outer():
-#     def fun( x, y): return to_scalar(np.outer(x, y))
-#     def dfun(x, y): return to_scalar(grad(fun)(x, y))
-#
-#     vect2 = npr.randn(11)
-#     vect3 = npr.randn(11)
-#
-#     check_grads(fun, vect2, vect3)
-#     check_grads(fun, vect2.T, vect3)
-#     check_grads(fun, vect2.T, vect3.T)
-#     check_grads(dfun, vect2, vect3)
-#     check_grads(dfun, vect2.T, vect3)
-#     check_grads(dfun, vect2.T, vect3.T)
-#
-#
-# def test_max():
-#     def fun(x): return to_scalar(np.max(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_max_axis():
-#     def fun(x): return to_scalar(np.max(x, axis=1))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(3, 4, 5)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_max_axis_keepdims():
-#     def fun(x): return to_scalar(np.max(x, axis=1, keepdims=True))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(3, 4, 5)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_min():
-#     def fun(x): return to_scalar(np.min(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_min_axis():
-#     def fun(x): return to_scalar(np.min(x, axis=1))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(3, 4, 5)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_min_axis_keepdims():
-#     def fun(x): return to_scalar(np.min(x, axis=1, keepdims=True))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(3, 4, 5)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_sum_1():
-#     def fun(x): return to_scalar(np.sum(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_sum_2():
-#     def fun(x): return to_scalar(np.sum(x, axis=0))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_sum_3():
-#     def fun(x): return to_scalar(np.sum(x, axis=0, keepdims=True))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_sum_with_axis_tuple():
-#     def fun(x): return to_scalar(np.sum(x, axis=(1,2)))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11, 7)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_flipud():
-#     def fun(x): return to_scalar(np.flipud(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_fliplr():
-#     def fun(x): return to_scalar(np.fliplr(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_rot90():
-#     def fun(x): return to_scalar(np.rot90(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_cumsum():
-#     def fun(x): return to_scalar(np.cumsum(x, axis=0))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_cumsum_1d():
-#     def fun(x): return to_scalar(np.cumsum(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_cumsum_no_axis():
-#     def fun(x): return to_scalar(np.cumsum(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_non_numpy_sum():
-#     def fun(x, y):
-#         return to_scalar(sum([x, y]))
-#     d_fun = lambda x, y : to_scalar(grad(fun)(x, y))
-#     mat1 = npr.randn(10, 11)
-#     mat2 = npr.randn(10, 11)
-#     check_grads(fun, mat1, mat2)
-#     check_grads(d_fun, mat1, mat2)
-#
-# def test_mean_1():
-#     def fun(x): return to_scalar(np.mean(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_mean_2():
-#     def fun(x): return to_scalar(np.mean(x, axis=0))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_mean_3():
-#     def fun(x): return to_scalar(np.mean(x, axis=0, keepdims=True))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_index_ints():
-#     A = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(x[3, 0, 1])
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_index_slice():
-#     A = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(x[::-1, 2:4, :])
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_index_lists():
-#     A = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(x[[0, 1, 2], :, :])
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_index_mixed():
-#     A = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(x[3, 2:, [1, 3]])
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_vector_slice():
-#     A = npr.randn(5)
-#     def fun(x): return to_scalar(x[2:4])
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_index_slice_fanout():
-#     A = npr.randn(5, 6, 4)
-#     def fun(x):
-#         y = x[::-1, 2:4, :]
-#         z = x[::-1, 3:5, :]
-#         return to_scalar(y + z)
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_index_multiple_slices():
-#     A = npr.randn(7)
-#     def fun(x):
-#         y = x[2:6]
-#         z = y[1:3]
-#         return to_scalar(z)
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_reshape_method():
-#     A = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(x.reshape((5 * 4, 6)))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_reshape_call():
-#     A = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(np.reshape(x, (5 * 4, 6)))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_reshape_method_nolist():
-#     # The reshape can be called in two different ways:
-#     # like A.reshape((5,4)) or A.reshape(5,4).
-#     # This test checks that we support the second way.
-#     A = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(x.reshape(5 * 4, 6))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_ravel_method():
-#     A = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(x.ravel())
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_ravel_call():
-#     A = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(np.ravel(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_flatten_method():
-#     A = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(x.flatten())
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_simple_concatenate():
-#     A = npr.randn(5, 6, 4)
-#     B = npr.randn(4, 6, 4)
-#     def fun(x): return to_scalar(np.concatenate((A, x)))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, B)
-#     check_grads(d_fun, B)
-#
-# def test_concatenate_axis_0():
-#     A = npr.randn(5, 6, 4)
-#     B = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(np.concatenate((B, x, B)))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_concatenate_axis_1():
-#     A = npr.randn(5, 6, 4)
-#     B = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(np.concatenate((B, x, B), axis=1))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_concatenate_axis_1_unnamed():
-#     """Tests whether you can specify the axis without saying "axis=1"."""
-#     A = npr.randn(5, 6, 4)
-#     B = npr.randn(5, 6, 4)
-#     def fun(x): return to_scalar(np.concatenate((B, x, B), 1))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_trace():
-#     def fun(x): return np.trace(x, offset=offset)
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 11)
-#     offset = npr.randint(-9,11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_trace2():
-#     def fun(x): return np.trace(x, offset=offset)
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(11, 10)
-#     offset = npr.randint(-9,11)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_trace_extradims():
-#     def fun(x): return to_scalar(np.trace(x, offset=offset))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(5,6,4,3)
-#     offset = npr.randint(-5,6)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# # TODO: Allow axis1, axis2 args.
-# # def test_trace_extradims2():
-# #     def fun(x): return to_scalar(np.trace(x, offset=offset, axis1=3,axis2=2))
-# #     d_fun = lambda x : to_scalar(grad(fun)(x))
-# #     mat = npr.randn(5,6,4,3)
-# #     offset = npr.randint(-5,6)
-# #     check_grads(fun, mat)
-# #     check_grads(d_fun, mat)
-#
-# def test_diag():
-#     def fun(x): return to_scalar(np.diag(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(10, 10)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_transpose():
-#     def fun(x): return to_scalar(x.T)
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(8, 8)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_roll():
-#     def fun(x): return to_scalar(np.roll(x, 2, axis=1))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(4, 5)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_roll_no_axis():
-#     def fun(x): return to_scalar(np.roll(x, 2, axis=1))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(4, 5)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_triu():
-#     def fun(x): return to_scalar(np.triu(x, k = 2))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(5, 5)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_tril():
-#     def fun(x): return to_scalar(np.tril(x, k = 2))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(5, 5)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_clip():
-#     def fun(x): return to_scalar(np.clip(x, a_min=0.1, a_max=1.1))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(5, 5)
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_prod_1():
-#     def fun(x): return to_scalar(np.prod(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(2, 3)**2 / 10.0 + 0.1  # Gradient unstable when zeros are present.
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_prod_2():
-#     def fun(x): return to_scalar(np.prod(x, axis=0))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(2, 3)**2 + 0.1
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_prod_3():
-#     def fun(x): return to_scalar(np.prod(x, axis=0, keepdims=True))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(2, 3)**2 + 0.1
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_prod_4():
-#     def fun(x): return to_scalar(np.prod(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     mat = npr.randn(7)**2 + 0.1
-#     check_grads(fun, mat)
-#     check_grads(d_fun, mat)
-#
-# def test_1d_array():
-#     def fun(x):
-#         return to_scalar(np.array([x, x * 1.0, x + 2.5]))
-#     d_fun = lambda x : grad(fun)(x)
-#     check_grads(fun, 3.0)
-#     check_grads(d_fun, 3.0)
-#
-# def test_2d_array():
-#     def fun(x):
-#         return to_scalar(np.array([[x   , x * 1.0, x + 2.5],
-#                                    [x**2, x      , x / 2.0]]))
-#
-#     d_fun = lambda x : grad(fun)(x)
-#     check_grads(fun, 3.0)
-#     check_grads(d_fun, 3.0)
-#
-# def test_1d_array_fanout():
-#     def fun(x):
-#         A = to_scalar(np.array([x, x * 1.0, x + 2.5]))
-#         return to_scalar(A + A)
-#     d_fun = lambda x : grad(fun)(x)
-#     check_grads(fun, 3.0)
-#     check_grads(d_fun, 3.0)
-#
-# def test_2d_array_fanout():
-#     def fun(x):
-#         A = np.array([[x   , x * 1.0, x + 2.5],
-#                       [x**2, x      , x / 2.0]])
-#         return to_scalar(A + A)
-#
-#     d_fun = lambda x : grad(fun)(x)
-#     check_grads(fun, 3.0)
-#     check_grads(d_fun, 3.0)
-#
-# def test_array_from_scalar():
-#     def fun(x):
-#         return to_scalar(np.array(x))
-#
-#     d_fun = lambda x : grad(fun)(x)
-#     check_grads(fun, 3.0)
-#     check_grads(d_fun, 3.0)
-#
-# def test_array_from_arrays():
-#     def fun(x):
-#         return to_scalar(np.array([x, x]))
-#
-#     A = npr.randn(3, 2)
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_array_from_arrays_2():
-#     def fun(x):
-#         return to_scalar(np.array([[2*x, x + 1],
-#                                    [x  ,     x]]))
-#     A = npr.randn(3, 2)
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_len():
-#     def fun(x):
-#         assert len(x) == 3
-#         return to_scalar(x)
-#     A = npr.randn(3, 2)
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_r_basic():
-#     with warnings.catch_warnings(record=True) as w:
-#         def fun(x):
-#             c = npr.randn(3, 2)
-#             b = np.r_[x]
-#             return to_scalar(b)
-#         A = npr.randn(3, 2)
-#         d_fun = lambda x : to_scalar(grad(fun)(x))
-#         check_grads(fun, A)
-#         check_grads(d_fun, A)
-#
-# def test_r_double():
-#     with warnings.catch_warnings(record=True) as w:
-#         def fun(x):
-#             c = npr.randn(3, 2)
-#             b = np.r_[x, x]
-#             return to_scalar(b)
-#         A = npr.randn(3, 2)
-#         d_fun = lambda x : to_scalar(grad(fun)(x))
-#         check_grads(fun, A)
-#         check_grads(d_fun, A)
-#
-# def test_no_relation():
-#     with warnings.catch_warnings(record=True) as w:
-#         c = npr.randn(3, 2)
-#         def fun(x):
-#             return to_scalar(c)
-#         A = npr.randn(3, 2)
-#         d_fun = lambda x : to_scalar(grad(fun)(x))
-#         check_grads(fun, A)
-#         check_grads(d_fun, A)
-#
-# def test_r_no_relation():
-#     with warnings.catch_warnings(record=True) as w:
-#         c = npr.randn(3, 2)
-#         def fun(x):
-#             b = np.r_[c]
-#             return to_scalar(b)
-#         A = npr.randn(3, 2)
-#         d_fun = lambda x : to_scalar(grad(fun)(x))
-#         check_grads(fun, A)
-#         check_grads(d_fun, A)
-#
-# def test_r_node_and_const():
-#     with warnings.catch_warnings(record=True) as w:
-#         c = npr.randn(3, 2)
-#         def fun(x):
-#             b = np.r_[x, c]
-#             return to_scalar(b)
-#         A = npr.randn(3, 2)
-#         d_fun = lambda x : to_scalar(grad(fun)(x))
-#         check_grads(fun, A)
-#         check_grads(d_fun, A)
-#
-# def test_r_mixed():
-#     with warnings.catch_warnings(record=True) as w:
-#         c = npr.randn(3, 2)
-#         def fun(x):
-#             b = np.r_[x, c, x]
-#             return to_scalar(b)
-#         A = npr.randn(3, 2)
-#         d_fun = lambda x : to_scalar(grad(fun)(x))
-#         check_grads(fun, A)
-#         check_grads(d_fun, A)
-#
-# def test_r_slicing():
-#     with warnings.catch_warnings(record=True) as w:
-#         c = npr.randn(10)
-#         def fun(x):
-#             b = np.r_[x, c, 1:10]
-#             return to_scalar(b)
-#         A = npr.randn(10)
-#         d_fun = lambda x : to_scalar(grad(fun)(x))
-#         check_grads(fun, A)
-#         check_grads(d_fun, A)
-#
-# def test_c_():
-#     with warnings.catch_warnings(record=True) as w:
-#         c = npr.randn(3, 2)
-#         def fun(x):
-#             b = np.c_[x, c, x]
-#             return to_scalar(b)
-#         A = npr.randn(3, 2)
-#         d_fun = lambda x : to_scalar(grad(fun)(x))
-#         check_grads(fun, A)
-#         check_grads(d_fun, A)
-#
-# def test_c_mixed():
-#     with warnings.catch_warnings(record=True) as w:
-#         c = npr.randn(3, 2)
-#         def fun(x):
-#             b = np.c_[x, c, x]
-#             return to_scalar(b)
-#         A = npr.randn(3, 2)
-#         d_fun = lambda x : to_scalar(grad(fun)(x))
-#         check_grads(fun, A)
-#         check_grads(d_fun, A)
-#
-# def test_var_ddof():
-#     B = npr.randn(3)
-#     C = npr.randn(3, 4)
-#     D = npr.randn(1, 3)
-#     combo_check(np.var, (0,), [B, C, D], axis=[None], keepdims=[True, False], ddof=[0, 1])
-#     combo_check(np.var, (0,), [C, D], axis=[None, 1], keepdims=[True, False], ddof=[2])
-#
-# def test_std_ddof():
-#     B = npr.randn(3)
-#     C = npr.randn(3, 4)
-#     D = npr.randn(1, 3)
-#     combo_check(np.std, (0,), [B, C, D], axis=[None], keepdims=[True, False], ddof=[0, 1])
-#     combo_check(np.std, (0,), [C, D], axis=[None, 1], keepdims=[True, False], ddof=[2])
-#
-# def test_where():
-#     def fun(x, y):
-#         b = np.where(C, x, y)
-#         return to_scalar(b)
-#     C = npr.randn(4, 5) > 0
-#     A = npr.randn(4, 5)
-#     B = npr.randn(4, 5)
-#     d_fun = lambda a, b : to_scalar(grad(fun)(a, b))
-#     check_grads(fun, A, B)
-#     check_grads(d_fun, A, B)
-#
-# def test_squeeze_func():
-#     A = npr.randn(5, 1, 4)
-#     def fun(x): return to_scalar(np.squeeze(x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_squeeze_method():
-#     A = npr.randn(5, 1, 4)
-#     def fun(x): return to_scalar(x.squeeze())
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_repeat():
-#     A = npr.randn(5, 3, 4)
-#     def fun(x): return to_scalar(np.repeat(x, 2, axis=1))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_repeat_axis1_rep1():
-#     A = npr.randn(5, 3, 4)
-#     def fun(x): return to_scalar(np.repeat(x, 1, axis=1))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_repeat_axis0():
-#     A = npr.randn(5, 3)
-#     def fun(x): return to_scalar(np.repeat(x, 2, axis=0))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_repeat_1d_axis0():
-#     A = npr.randn(5)
-#     def fun(x): return to_scalar(np.repeat(x, 2, axis=0))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_repeat_axis0_rep1():
-#     A = npr.randn(5, 1)
-#     def fun(x): return to_scalar(np.repeat(x, 1, axis=0))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_expand_dims():
-#     A = npr.randn(5, 1, 4)
-#     def fun(x): return to_scalar(np.expand_dims(x, 2))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_array_creation():
-#     # Will always pass, but will take ages (like a minute) if the complexity of
-#     # array creation is O(N)
-#     N = 100000
-#     def fun(x):
-#         arr = [x for i in range(N)]
-#         return np.sum(np.array(arr))
-#     grad(fun)(1.0)
-#
-# def test_tensordot_kwargs_by_position():
-#     def fun(x):
-#         return np.tensordot(x * np.ones((2,2)),
-#                             x * np.ones((2,2)), 2)
-#     grad(fun)(1.0)
-#
-# def test_multi_index():
-#     A = npr.randn(3)
-#     fun = lambda x: np.sum(x[[0, 0]])
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_multi_index2():
-#     A = npr.randn(3)
-#     fun = lambda x: np.sum(x[[0, 1, 0]])
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# def test_index_dot_slices():
-#     A = npr.randn(4)
-#     def fun(x): return np.dot(x[:2], x[2:])
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, A)
-#     check_grads(d_fun, A)
-#
-# #def test_index_exp_slicing():
-# #    def fun(x):
-# #        b = np.index_exp[x, x]
-# #        return to_scalar(b)
-# #    A = npr.randn(10, 1)
-# #    d_fun = lambda x : to_scalar(grad(fun)(x))
-# #    check_grads(fun, A)
-# #    check_grads(d_fun, A)
-#
-# #def test_s_slicing():
-# #    def fun(x):
-# #        b = np.s_[x, x]
-# #        return to_scalar(b)
-# #    A = npr.randn(10, 1)
-# #    d_fun = lambda x : to_scalar(grad(fun)(x))
-# #    check_grads(fun, A)
-# #    check_grads(d_fun, A)
-#
-# # TODO:
-# # getitem
-#
-# def test_cast_to_int():
-#     inds = np.ones(5)[:,None]
-#
-#     def fun(W):
-#         # glue W and inds together
-#         glued_together = np.concatenate((W, inds), axis=1)
-#
-#         # separate W and inds back out
-#         new_W = W[:,:-1]
-#         new_inds = np.int64(W[:,-1])
-#
-#         assert new_inds.dtype == np.int64
-#         return new_W[new_inds].sum()
-#
-#     W = np.random.randn(5, 10)
-#     check_grads(fun, W)
-#
-# def test_make_diagonal():
-#     def fun(D):
-#         return to_scalar(np.make_diagonal(D, axis1=-1, axis2=-2))
-#
-#     D = np.random.randn(4)
-#     A = np.make_diagonal(D, axis1=-1, axis2=-2)
-#     assert np.allclose(np.diag(A), D)
-#     check_grads(fun, D)
-#
-#     D = np.random.randn(3, 4)
-#     A = np.make_diagonal(D, axis1=-1, axis2=-2)
-#     assert all([np.allclose(np.diag(A[i]), D[i]) for i in range(3)])
-#     check_grads(fun, D)
-#
-# def test_diagonal():
-#     def fun(D):
-#         return to_scalar(np.diagonal(D, axis1=-1, axis2=-2))
-#
-#     D = np.random.randn(4, 4)
-#     A = np.make_diagonal(D, axis1=-1, axis2=-2)
-#     check_grads(fun, D)
-#
-#     D = np.random.randn(3, 4, 4)
-#     A = np.make_diagonal(D, axis1=-1, axis2=-2)
-#     check_grads(fun, D)
-#
-# def test_nan_to_num():
-#     y = np.array([0., np.nan, np.inf, -np.inf])
-#     fun = lambda x: np.sum(np.sin(np.nan_to_num(x + y)))
-#
-#     x = np.random.randn(4)
-#     check_grads(fun, x)
-#
-# # TODO(mattjj): np.frexp returns a pair of ndarrays and the second is an int
-# # type, for which there is currently no vspace registered
-# #def test_frexp():
-# #    fun = lambda x: to_scalar(np.frexp(x)[0])
-# #    d_fun = lambda x: to_scalar(grad(fun)(x))
-# #    A = 1.2 #np.random.rand(4,3) * 0.8 + 2.1
-# #    check_grads(fun, A)
-# #    #check_grads(d_fun, A)
-#
-# def test_max_equal_values():
-#     def fun(x): return to_scalar(np.max(np.array([x, x])))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, 1.0)
-#     check_grads(d_fun, 1.0)
-#
-# def test_max_equal_values_2d():
-#     def fun(x): return to_scalar(np.max(np.array([[x, x  ],
-#                                                   [x, 0.5]]), axis=1))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, 1.0)
-#     check_grads(d_fun, 1.0)
-#     check_grads(fun, -1.0)
-#     check_grads(d_fun, -1.0)
-#
-# def test_min_3_way_equality():
-#     def fun(x): return to_scalar(np.min(np.array([[x,     x,   x],
-#                                                   [x,   0.5, 0.5],
-#                                                   [0.5, 0.5, 0.5],
-#                                                   [x,     x, 0.5]]), axis=0))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, 1.0)
-#     check_grads(d_fun, 1.0)
-#     check_grads(fun, -1.0)
-#     check_grads(d_fun, -1.0)
-#
-# def test_maximum_equal_values():
-#     def fun(x): return to_scalar(np.maximum(x, x))
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, 1.0)
-#     check_grads(d_fun, 1.0)
-#
-# def test_maximum_equal_values_2d():
-#     def fun(x): return to_scalar(np.maximum(
-#             np.array( [x,   x, 0.5]),
-#             np.array([[x, 0.5,   x],
-#                       [x,   x, 0.5]])))
-#
-#     d_fun = lambda x : to_scalar(grad(fun)(x))
-#     check_grads(fun, 1.0)
-#     check_grads(d_fun, 1.0)
-#     check_grads(fun, -1.0)
-#     check_grads(d_fun, -1.0)
-#     check_grads(fun, 2.0)
-#     check_grads(d_fun, 2.0)
+# Array statistics functions
+def test_max():  stat_check(np.max)
+def test_all():  stat_check(np.all, fwd=False)
+def test_any():  stat_check(np.any, fwd=False)
+def test_max():  stat_check(np.max)
+def test_mean(): stat_check(np.mean)
+def test_min():  stat_check(np.min)
+def test_sum():  stat_check(np.sum)
+def test_prod(): stat_check(np.prod)
+def test_var():  stat_check(np.var)
+def test_std():  stat_check(np.std)
+
+# Unary ufunc tests
+
+def test_abs():     unary_ufunc_check(np.abs, lims=[0.1, 4.0])
+def test_absolute():unary_ufunc_check(np.absolute, lims=[0.1, 4.0])
+def test_arccos():  unary_ufunc_check(np.arccos, lims=[-0.9, 0.9])
+def test_arccosh(): unary_ufunc_check(np.arccosh, lims=[1.1, 4.0])
+def test_arcsin():  unary_ufunc_check(np.arcsin, lims=[-0.9, 0.9])
+def test_arcsinh(): unary_ufunc_check(np.arcsinh, lims=[-0.9, 0.9])
+def test_arctan():  unary_ufunc_check(np.arctan)
+def test_arctanh(): unary_ufunc_check(np.arctanh, lims=[-0.9, 0.9])
+def test_ceil():    unary_ufunc_check(np.ceil, lims=[-1.5, 1.5], test_complex=False)
+def test_cos():     unary_ufunc_check(np.cos)
+def test_cosh():    unary_ufunc_check(np.cosh)
+def test_deg2rad(): unary_ufunc_check(np.deg2rad, test_complex=False)
+def test_degrees(): unary_ufunc_check(lambda x : np.degrees(x)/50.0, test_complex=False)
+def test_exp():     unary_ufunc_check(np.exp)
+def test_exp2():    unary_ufunc_check(np.exp2)
+def test_expm1():   unary_ufunc_check(np.expm1)
+def test_fabs():    unary_ufunc_check(np.fabs, test_complex=False)
+def test_floor():   unary_ufunc_check(np.floor, lims=[-1.5, 1.5], test_complex=False)
+def test_log():     unary_ufunc_check(np.log,   lims=[0.2, 2.0])
+def test_log10():   unary_ufunc_check(np.log10, lims=[0.2, 2.0])
+def test_log1p():   unary_ufunc_check(np.log1p, lims=[0.2, 2.0])
+def test_log2():    unary_ufunc_check(np.log2,  lims=[0.2, 2.0])
+def test_negative():unary_ufunc_check(np.negative)
+def test_rad2deg(): unary_ufunc_check(lambda x : np.rad2deg(x)/50.0, test_complex=False)
+def test_radians(): unary_ufunc_check(np.radians, test_complex=False)
+def test_reciprocal():unary_ufunc_check(np.reciprocal, lims=[1., 2.])
+def test_sign():    unary_ufunc_check(np.sign)
+def test_sin():     unary_ufunc_check(np.sin)
+def test_sinc():    unary_ufunc_check(np.sinc)
+def test_sinh():    unary_ufunc_check(np.sinh)
+def test_sqrt():    unary_ufunc_check(np.sqrt, lims=[1.0, 3.0])
+def test_square():  unary_ufunc_check(np.square, test_complex=False)
+def test_tan():     unary_ufunc_check(np.tan, lims=[-1.1, 1.1])
+def test_tanh():    unary_ufunc_check(np.tanh)
+def test_real():    unary_ufunc_check(np.real)
+def test_real_ic(): unary_ufunc_check(np.real_if_close)
+def test_imag():    unary_ufunc_check(np.imag)
+def test_conj():    unary_ufunc_check(np.conj)
+def test_angle():   unary_ufunc_check(np.angle)
+
+# Binary ufunc tests
+
+def test_add(): binary_ufunc_check(np.add)
+def test_multiply(): binary_ufunc_check(np.multiply)
+def test_subtract(): binary_ufunc_check(np.subtract)
+def test_divide(): binary_ufunc_check(np.divide, lims_A=[1, 2], lims_B=[1, 2])
+def test_logaddexp(): binary_ufunc_check(np.logaddexp, test_complex=False)
+def test_logaddexp2(): binary_ufunc_check(np.logaddexp2, test_complex=False)
+def test_remainder(): binary_ufunc_check_no_same_args(np.remainder, lims_A=[-0.9, 0.9], lims_B=[0.7, 1.9], test_complex=False)
+def test_true_divide(): binary_ufunc_check(np.true_divide, lims_B=[0.8, 1.2], test_complex=False)
+def test_mod(): binary_ufunc_check_no_same_args(np.mod,    lims_B=[0.8, 2.1], test_complex=False)
+def test_true_divide_neg(): binary_ufunc_check(np.true_divide, lims_B=[-0.8, -2.0], test_complex=False)
+def test_mod_neg(): binary_ufunc_check_no_same_args(np.mod,    lims_B=[-0.8, -2.0], test_complex=False)
+
+def test_op_mul(): binary_ufunc_check(op.mul)
+def test_op_add(): binary_ufunc_check(op.add)
+def test_op_sub(): binary_ufunc_check(op.sub)
+def test_op_mod(): binary_ufunc_check_no_same_args(op.mod, lims_B=[0.8, 2.0], test_complex=False)
+def test_op_mod_neg(): binary_ufunc_check_no_same_args(op.mod, lims_B=[-0.8, -2.0], test_complex=False)
+
+
+
+# Misc tests
+
+R = npr.randn
+def test_transpose(): combo_check(np.transpose, [0],
+                                  [R(2, 3, 4)], axes = [None, [0, 1, 2], [0, 2, 1],
+                                                              [2, 0, 1], [2, 1, 0],
+                                                              [1, 0, 2], [1, 2, 0]])
+def test_repeat(): combo_check(np.repeat, [0], [R(2, 3, 4), R(3, 1)],
+                               repeats=[0,1,2], axis = [None, 0, 1])
+
+def test_diff():
+    combo_check(np.diff, [0], [R(5,5), R(5,5,5)], n=[1,2], axis=[0,1])
+    combo_check(np.diff, [0], [R(1), R(1,1)], axis=[0])
+    combo_check(np.diff, [0], [R(1,1), R(3,1)], axis=[1])
+
+def test_tile():
+    combo_check(np.tile, [0], [R(2,1,3,1)], reps=[(1, 4, 1, 2)])
+    combo_check(np.tile, [0], [R(1,2)], reps=[(1,2), (2,3), (3,2,1)])
+    combo_check(np.tile, [0], [R(1)], reps=[(2,), 2])
+
+def test_kron():
+    combo_check(np.kron, [0,1], [R(5,5), R(4,4)], [R(3,3), R(2,2)])
+
+def test_inner(): combo_check(np.inner, [0, 1],
+                            [1.5, R(3), R(2, 3)],
+                            [0.3, R(3), R(4, 3)])
+def test_dot(): combo_check(np.dot, [0, 1],
+                            [1.5, R(3), R(2, 3), R(2, 2, 3)],
+                            [0.3, R(3), R(3, 4), R(2, 3, 4)])
+def test_matmul(): combo_check(np.matmul, [0, 1],
+                               [R(3), R(2, 3), R(2, 2, 3)],
+                               [R(3), R(3, 4), R(2, 3, 4)])
+def test_outer(): combo_check(np.outer, [0, 1],
+                              [R(4)], [R(5)])
+def test_tensordot_1(): combo_check(np.tensordot, [0, 1],
+                                    [R(1, 3), R(2, 3, 2)],
+                                    [R(3),    R(3, 1),    R(3, 4, 2)],
+                                    axes=[ [(1,), (0,)] ])
+def test_tensordot_2(): combo_check(np.tensordot, [0, 1],
+                                    [R(3),    R(3, 1),    R(3, 4, 2)],
+                                    [R(1, 3), R(2, 3, 2)],
+                                    axes=[ [(0,), (1,)] ])
+def test_tensordot_3(): combo_check(np.tensordot, [0, 1],
+                                    [R(2, 3),    R(2, 3, 4)],
+                                    [R(1, 2, 3), R(2, 2, 3, 4)],
+                                    axes=[ [(0, 1), (1, 2)] ,  [(1, 0), (2, 1)] ])
+def test_tensordot_4(): combo_check(np.tensordot, [0, 1],
+                                    [R(2, 2), R(4, 2, 2)],
+                                    [R(2, 2), R(2, 2, 4)],
+                                    axes=[1, 2])
+def test_tensordot_5(): combo_check(np.tensordot, [0, 1], [R(4)], [R()], axes=[0])
+def test_tensordot_6(): combo_check(np.tensordot, [0, 1], [R(2,6)], [R(6,3)], axes=[[[-1], [0]]])
+
+# Need custom tests because gradient is undefined when arguments are identical.
+def test_maximum(): combo_check(np.maximum, [0, 1],
+                               [R(1), R(1,4), R(3, 4)],
+                               [R(1), R(1,4), R(3, 4)])
+def test_fmax(): combo_check(np.fmax, [0, 1],
+                            [R(1), R(1,4), R(3, 4)],
+                            [R(1), R(1,4), R(3, 4)])
+
+def test_minimum(): combo_check(np.minimum, [0, 1],
+                               [R(1), R(1,4), R(3, 4)],
+                               [R(1), R(1,4), R(3, 4)])
+def test_fmin(): combo_check(np.fmin, [0, 1],
+                            [R(1), R(1,4), R(3, 4)],
+                            [R(1), R(1,4), R(3, 4)])
+
+def test_sort():       combo_check(np.sort, [0], [R(1), R(7)])
+def test_msort():     combo_check(np.msort, [0], [R(1), R(7)])
+def test_partition(): combo_check(np.partition, [0],
+                                  [R(7), R(14)], kth=[0, 3, 6])
+
+def test_atleast_1d(): combo_check(np.atleast_1d, [0], [1.2, R(1), R(7), R(1,4), R(2,4), R(2, 4, 5)])
+def test_atleast_2d(): combo_check(np.atleast_2d, [0], [1.2, R(1), R(7), R(1,4), R(2,4), R(2, 4, 5)])
+def test_atleast_3d(): combo_check(np.atleast_3d, [0], [1.2, R(1), R(7), R(1,4), R(2,4), R(2, 4, 5),
+                                                        R(2, 4, 3, 5)])
+
+def test_einsum_transpose():  combo_check(np.einsum, [1],    ['ij->ji'], [R(1, 1), R(4,4), R(3,4)])
+def test_einsum_matmult():    combo_check(np.einsum, [1, 2], ['ij,jk->ik'], [R(2, 3)], [R(3,4)])
+def test_einsum_matmult_broadcast(): combo_check(np.einsum, [1, 2], ['...ij,...jk->...ik'],
+                                                 [R(2, 3), R(2, 2, 3)],
+                                                 [R(3, 4), R(2, 3, 4)])
+def test_einsum_covsum():     combo_check(np.einsum, [1, 2], ['ijk,lji->lki'], [R(3, 4, 4)], [R(4, 4, 3)])
+def test_einsum_ellipses(): combo_check(np.einsum, [1, 2], ['...jk,...lj->...lk', '...,...->...'],
+                                        [R(4, 4), R(3, 4, 4)],
+                                        [R(4, 4), R(3, 4, 4)])
+def test_einsum_ellipses_tail(): combo_check(np.einsum, [1, 2], ['jk...,lj...->lk...'],
+                                             [R(3, 2), R(3, 2, 4)],
+                                             [R(2, 3), R(2, 3, 4)])
+def test_einsum_ellipses_center(): combo_check(np.einsum, [1, 2], ['j...k,lj...->lk...'],
+                                               [R(2, 2), R(2, 2, 2)],
+                                               [R(2, 2), R(2, 2, 2)])
+def test_einsum_three_args(): combo_check(np.einsum, [1, 2], ['ijk,lji,lli->lki'],
+                                          [R(3, 4, 4)], [R(4, 4, 3)], [R(4, 4, 3)])
+
+def test_einsum2_transpose():  combo_check(np.einsum, [0], [R(1, 1), R(4,4), R(3,4)], [(0,1)], [(1,0)])
+def test_einsum2_matmult():    combo_check(np.einsum, [0, 2], [R(2, 3)], [(0,1)], [R(3,4)], [(1,2)], [(0,2)])
+def test_einsum2_matmult_broadcast(): combo_check(np.einsum, [0, 2],
+                                                  [R(2, 3), R(2, 2, 3)], [(Ellipsis, 0, 1)],
+                                                  [R(3, 4), R(2, 3, 4)], [(Ellipsis, 1, 2)],
+                                                  [(Ellipsis, 0, 2)])
+def test_einsum2_covsum():     combo_check(np.einsum, [0, 2], [R(3, 4, 4)], [(0,1,2)], [R(4, 4, 3)], [(3,1,0)], [(3,2,0)])
+def test_einsum2_three_args(): combo_check(np.einsum, [0, 2],
+                                          [R(3, 4, 4)], [(0,1,2)], [R(4, 4, 3)], [(3,1,0)], [R(4, 4, 3)], [(3,3,0)], [(3,2,0)])
+
+def test_trace():    combo_check(np.trace, [0], [R(5, 5), R(4, 5), R(5, 4), R(3, 4, 5)], offset=[-1, 0, 1])
+def test_diag():     combo_check(np.diag, [0], [R(5, 5)], k=[-1, 0, 1])
+def test_diag_flat():combo_check(np.diag, [0], [R(5)],    k=[-1, 0, 1])
+def test_tril():     combo_check(np.tril, [0], [R(5, 5)], k=[-1, 0, 1])
+def test_triu():     combo_check(np.triu, [0], [R(5, 5)], k=[-1, 0, 1])
+def test_tril_3d():  combo_check(np.tril, [0], [R(5, 5, 4)], k=[-1, 0, 1])
+def test_triu_3d():  combo_check(np.triu, [0], [R(5, 5, 4)], k=[-1, 0, 1])
+
+def test_swapaxes(): combo_check(np.swapaxes, [0], [R(3, 4, 5)], axis1=[0, 1, 2], axis2=[0, 1, 2])
+def test_rollaxis(): combo_check(np.rollaxis, [0], [R(2, 3, 4)], axis =[0, 1, 2], start=[0, 1, 2, 3])
+def test_cross():    combo_check(np.cross, [0, 1], [R(3, 3)], [R(3, 3)],
+                                 axisa=[-1, 0, 1], axisb=[-1, 0, 1], axisc=[-1, 0, 1], axis=[None, -1, 0, 1])
+
+def test_vsplit_2d(): combo_check(np.vsplit, [0], [R(4, 8)],    [4, [1, 2]])
+def test_vsplit_3d(): combo_check(np.vsplit, [0], [R(4, 4, 4)], [2, [1, 2]])
+def test_hsplit_2d(): combo_check(np.hsplit, [0], [R(4, 8)],    [4, [1, 2]])
+def test_hsplit_3d(): combo_check(np.hsplit, [0], [R(4, 4, 4)], [2, [1, 2]])
+def test_dsplit_3d(): combo_check(np.dsplit, [0], [R(4, 4, 4)], [2, [1, 2]])
+
+def test_split_1d(): combo_check(np.split, [0], [R(1), R(7)], [1],         axis=[0])
+def test_split_2d(): combo_check(np.split, [0], [R(4, 8)],    [4, [1, 2]], axis=[0, 1])
+def test_split_3d(): combo_check(np.split, [0], [R(4, 4, 4)], [2, [1, 2]], axis=[0, 1, 2])
+
+def test_array_split_1d(): combo_check(np.array_split, [0], [R(1), R(7)], [1, 3],      axis=[0])
+def test_array_split_2d(): combo_check(np.array_split, [0], [R(7, 7)],    [4, [3, 5]], axis=[0, 1])
+def test_array_split_3d(): combo_check(np.array_split, [0], [R(7, 7, 7)], [4, [3, 5]], axis=[0, 1, 2])
+
+def test_concatenate_1ist():  combo_check(np.concatenate, [0], [(R(1), R(3))],             axis=[0])
+def test_concatenate_tuple(): combo_check(np.concatenate, [0], [[R(1), R(3)]],             axis=[0])
+def test_concatenate_2d():    combo_check(np.concatenate, [0], [(R(2, 2), R(2, 2))],       axis=[0, 1])
+def test_concatenate_3d():    combo_check(np.concatenate, [0], [(R(2, 2, 2), R(2, 2, 2))], axis=[0, 1, 2])
+
+def test_vstack_1d(): combo_check(np.vstack, [0], [R(2), (R(2), R(2))])
+def test_vstack_2d(): combo_check(np.vstack, [0], [R(2, 3), (R(2, 4), R(1, 4))])
+def test_vstack_3d(): combo_check(np.vstack, [0], [R(2, 3, 4), (R(2, 3, 4), R(5, 3, 4))])
+def test_hstack_1d(): combo_check(np.hstack, [0], [R(2), (R(2), R(2))])
+def test_hstack_2d(): combo_check(np.hstack, [0], [R(3, 2), (R(3, 4), R(3, 5))])
+def test_hstack_3d(): combo_check(np.hstack, [0], [R(2, 3, 4), (R(2, 1, 4), R(2, 5, 4))])
+
+def test_stack_1d():  combo_check(np.stack,  [0], [(R(2),), (R(2), R(2))], axis=[0, 1])
+
+def test_row_stack_1d(): combo_check(np.row_stack, [0], [R(2), (R(2), R(2))])
+def test_row_stack_2d(): combo_check(np.row_stack, [0], [R(2, 3), (R(2, 4), R(1, 4))])
+def test_column_stack_1d(): combo_check(np.column_stack, [0], [R(2), (R(2), R(2))])
+def test_column_stack_2d(): combo_check(np.column_stack, [0], [R(2, 2), (R(2, 2), R(2, 2))])
+
+def test_select(): combo_check(np.select, [1], [[R(3,4,5) > 0, R(3,4,5) > 0, R(3,4,5) > 0]],
+                                               [[R(3,4,5),     R(3,4,5),     R(3,4,5)]], default=[0.0, 1.1])
+
+def test_flipud(): combo_check(np.flipud, [0], [R(10, 11)])
+def test_fliplr(): combo_check(np.fliplr, [0], [R(10, 11)])
+def test_rot90():  combo_check(np.rot90, [0], [R(10, 11)])
+def test_full():  combo_check(np.full, [1], [(4, 3, 5)], [R()])
+def test_cumsum():  combo_check(np.cumsum, [0], [R(3, 5)], axis=[0, None])
+
+
+def test_non_numpy_sum():
+    def fun(x, y):
+        return sum([x, y])
+    mat1 = npr.randn(10, 11)
+    mat2 = npr.randn(10, 11)
+    combo_check(fun, [0, 1], [mat1], [mat2])
+
+def test_index_ints():
+    A = npr.randn(5, 6, 4)
+    def fun(x): return x[3, 0, 1]
+    combo_check(fun, [0], [A])
+
+def test_index_slice():
+    A = npr.randn(5, 6, 4)
+    def fun(x): return x[::-1, 2:4, :]
+    combo_check(fun, [0], [A])
+
+def test_index_lists():
+    A = npr.randn(5, 6, 4)
+    def fun(x): return x[[0, 1, 2], :, :]
+    combo_check(fun, [0], [A])
+
+def test_index_mixed():
+    A = npr.randn(5, 6, 4)
+    def fun(x): return x[3, 2:, [1, 3]]
+    combo_check(fun, [0], [A])
+
+def test_vector_slice():
+    A = npr.randn(5)
+    def fun(x): return x[2:4]
+    combo_check(fun, [0], [A])
+
+def test_index_slice_fanout():
+    A = npr.randn(5, 6, 4)
+    def fun(x):
+        y = x[::-1, 2:4, :]
+        z = x[::-1, 3:5, :]
+        return y + z
+    combo_check(fun, [0], [A])
+
+def test_index_multiple_slices():
+    A = npr.randn(7)
+    def fun(x):
+        y = x[2:6]
+        z = y[1:3]
+        return z
+    combo_check(fun, [0], [A])
+
+def test_reshape_method():
+    A = npr.randn(5, 6, 4)
+    def fun(x): return x.reshape((5 * 4, 6))
+    combo_check(fun, [0], [A])
+
+def test_reshape_call():
+    A = npr.randn(5, 6, 4)
+    def fun(x): return np.reshape(x, (5 * 4, 6))
+    combo_check(fun, [0], [A])
+
+def test_reshape_method_nolist():
+    # The reshape can be called in two different ways:
+    # like A.reshape((5,4)) or A.reshape(5,4).
+    # This test checks that we support the second way.
+    A = npr.randn(5, 6, 4)
+    def fun(x): return x.reshape(5 * 4, 6)
+    combo_check(fun, [0], [A])
+def test_reshape_method(): combo_check(lambda x, y: x.reshape(*y), [0], [R(5, 6, 4)], [(30, 4), ((30, 4),)])
+def test_reshape_call(): combo_check(np.reshape, [0], [R(5, 6, 4)], [(30, 4)])
+def test_ravel_method(): combo_check(lambda x: x.ravel(), [0], [R(5, 6, 4)])
+def test_ravel_call(): combo_check(np.ravel, [0], [R(5, 6, 4)])
+def test_squeeze_method(): combo_check(lambda x: x.squeeze(), [0], [R(5, 1, 4)])
+def test_squeeze_call(): combo_check(np.squeeze, [0], [R(5, 1, 4)])
+def test_roll(): combo_check(np.roll, [0], [R(5, 4)], [2], axis=[1, None])
+def test_clip(): combo_check(np.clip, [0], [R(5, 5)], a_min=[0.1], a_max=[1.1])
+def test_where():
+    def fun(x, y):
+        return np.where(C, x, y)
+    C = npr.randn(4, 5) > 0
+    A = npr.randn(4, 5)
+    B = npr.randn(4, 5)
+    combo_check(fun, (0, 1), [A], [B])
+
+def test_expand_dims(): combo_check(np.expand_dims, [0], [R(5, 1, 3)], [2])
+def test_nan_to_num():
+    y = np.array([0., np.nan, np.inf, -np.inf])
+    fun = lambda x: np.sum(np.sin(np.nan_to_num(x + y)))
+    x = np.random.randn(4)
+    combo_check(fun, [0], [x])

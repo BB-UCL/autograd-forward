@@ -38,7 +38,7 @@ In [11]: def g(x):
 In [12]: hvp = jacobian_vector_product(grad(g))
 
 In [13]: hvp(x, v)
-Out[14]: array([  24.,   60.,  108.])
+Out[13]: array([  24.,   60.,  108.])
 ```
 Or you can use `autograd_forward.hessian_vector_product`, with the `mode` keyword argument set to `fwd-rev`.
 

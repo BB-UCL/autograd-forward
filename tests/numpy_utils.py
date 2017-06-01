@@ -12,6 +12,9 @@ from autograd_forward.util import check_forward_grads, flatten
 from builtins import range
 import warnings
 
+import coverage
+cover = coverage.Coverage()
+
 test_complex = True
 
 def combo_check(fun, argnums, *args, **kwargs):
@@ -27,6 +30,8 @@ def combo_check(fun, argnums, *args, **kwargs):
         print(".", end=' ')
 
 def check_fun_and_grads(fun, args, kwargs, argnums, fwd=True):
+    cover.load()
+    cover.start()
     wrt_args = [args[i] for i in argnums]
     rand_vecs = [npr.randn(flatten(arg)[0].size) for arg in wrt_args]
 
@@ -86,6 +91,8 @@ def check_fun_and_grads(fun, args, kwargs, argnums, fwd=True):
             except:
                 print("Second forward derivative test failed! Args were", args, kwargs)
                 raise
+        cover.stop()
+        cover.save()
 
 def stat_check(fun, test_complex=test_complex, mean=0., fwd=True):
     # Tests functions that compute statistics, like sum, mean, etc

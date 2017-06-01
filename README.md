@@ -29,7 +29,7 @@ In [9]: scalar_output_fun = lambda x, v: np.sum(jvp(x, v))
 In [10]: grad(scalar_output_fun)(x, v)
 Out[10]: array([  8.,  10.,  12.])
 ```
-For functions which output a scalar, you can calculate Hessian vector products by doing:
+For functions which output a scalar, you can calculate _Hessian vector products_ by doing:
 ```python
 In [11]: def g(x):
    ...:     return np.sum(x**3)

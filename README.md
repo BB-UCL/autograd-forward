@@ -21,7 +21,7 @@ In [7]: jvp(x, v)
 Out[7]: array([  8.,  20.,  36.])
 ```
 Mixing forward mode with Autograd's reverse mode operators 'just works':
-```
+```python
 In [8]: from autograd import grad
 
 In [9]: scalar_output_fun = lambda x, v: np.sum(jvp(x, v))

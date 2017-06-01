@@ -44,9 +44,6 @@ Or you can use `autograd_forward.hessian_vector_product`, with the `mode` keywor
 
 This package was written and is maintained by Jamie Townsend.
 
-# Supported primitive operations
-I've so far implemented forward derivatives for all of the Numpy primitives covered by Autograd, except those in `numpy.linalg`, and I've also implemented some of the Scipy primitives. Please file an issue if there's something that you need to differentiate that isn't yet implemented.
-
 # Installation
 Right now, autograd-forward depends on the latest bleeding edge version of Autograd on Github. You can install this version of Autograd from Github by doing
 ```
@@ -56,3 +53,6 @@ You can then install autograd-forward with
 ```
 pip install --upgrade git+https://github.com/BB-UCL/autograd-forward.git
 ```
+
+# Supported primitive operations
+I've so far implemented forward derivatives for all of the Numpy primitives covered by Autograd, except those in `numpy.linalg`, and I've also implemented some of the Scipy primitives. Please file an issue if there's something that you need to differentiate that isn't yet implemented.

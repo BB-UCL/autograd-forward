@@ -1,4 +1,3 @@
-"""Convenience functions built on top of `grad`."""
 from __future__ import absolute_import
 
 from autograd.convenience_wrappers import (attach_name_and_doc, safe_type,

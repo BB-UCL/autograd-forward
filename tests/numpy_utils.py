@@ -4,10 +4,10 @@ import itertools as it
 import autograd.numpy.random as npr
 import autograd.numpy as anp
 from autograd import grad, primitive
-from autograd.util import check_equivalent, check_grads, to_scalar
+from autograd.util import check_equivalent, check_grads, to_scalar, flatten
 
 from autograd_forward import forward_derivative
-from autograd_forward.util import check_forward_grads, flatten
+from autograd_forward.util import check_forward_grads
 
 from builtins import range
 import warnings
